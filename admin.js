@@ -1,13 +1,11 @@
-
-
-//-----初始化-----
-adminRender();
-
 //-----後台訂單-----
 const orderSection = document.querySelector(".orders");
 let orderData = [];
 
-//渲染後台訂單函式
+//-----初始化-----
+adminRender();
+
+//渲染後台訂單函式，含起動圓餅圖函式
 function adminRender(){
     axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${key}/orders`,token)
     .then(function(response){
@@ -53,57 +51,63 @@ function adminRender(){
         </tr>`
         })
         orderSection.innerHTML = str
-
-        //渲染圓餅圖資料
-        let rawData = {};
-        orderData.forEach(item => {
-            item.products.forEach(product => {
-                if(rawData[product.title] == undefined){
-                    rawData[product.title] = parseInt(product.quantity)
-                } 
-                else {
-                    rawData[product.title] += parseInt(product.quantity)
-                }
-            })
-        })
-        let itemTitle = Object.keys(rawData);
-        let chartData = [];
-        itemTitle.forEach((item)=>{
-            let perData = [];
-            perData.push(item)
-            perData.push(rawData[item])
-            chartData.push(perData)
-        })
-        //各種商品依照銷售件數由大到小排列
-        chartData.sort((a,b)=> {
-            console.log(a[1],b[1]);
-            return b[1] - a[1];
-        });
-
-        // C3.js
-        let chart = c3.generate({
-            bindto: '#chart', // HTML 元素綁定
-            data: {
-                type: "pie",
-                columns: chartData,
-                colors:{
-                    "Antony 床邊桌":"#71A3BB",
-                    "Charles 雙人床架":"#738D9E",
-                    "Jordan 雙人床架／雙人加大": "#74828F",
-                    "Charles 系列儲物組合": "#757780",
-                    "Louvre 雙人床架／雙人加大": "#8B9380",
-                    "Antony 雙人床架／雙人加大": "#A1AF7F",
-                    "Antony 遮光窗簾": "#B0C86F",
-                    "Louvre 單人床架": "#B2DB3F",
-                }
-            },
-        });
+        //啟動圓餅圖函式
+        chart();
     })
     .catch(error => {
         alert("系統錯誤");
         console.log(error.status);
     })
 }
+//渲染圓餅圖函式
+function chart(){
+    let rawData = {};
+    orderData.forEach(item => {
+        item.products.forEach(product => {
+            if(rawData[product.title] == undefined){
+                rawData[product.title] = parseInt(product.quantity)
+            } 
+            else {
+                rawData[product.title] += parseInt(product.quantity)
+            }
+        })
+    })
+    let itemTitle = Object.keys(rawData);
+    let chartData = [];
+    itemTitle.forEach((item)=>{
+        let perData = [];
+        perData.push(item)
+        perData.push(rawData[item])
+        chartData.push(perData)
+    })
+    //各種商品依照銷售件數由大到小排列
+    chartData.sort((a,b)=> {
+        return b[1] - a[1];
+    });
+    //製作只有銷售前三名以及其他剩餘品項總和的陣列
+    let sortedData = [chartData[0],chartData[1],chartData[2]];
+    let othersData = chartData.filter((item,index)=>{    //第四名以後的陣列
+        if(index>=3){
+            return item;
+        }
+    })
+    let othersNum = 0;  //第四名以後的所有銷售數量總和
+    othersData.forEach(item => {
+        othersNum += item[1]
+    })
+    let others = ["其他",othersNum];   //製作sortedData中的最後一個item
+    sortedData.push(others);
+
+    // C3.js
+    let chart = c3.generate({
+        bindto: '#chart', // HTML 元素綁定
+        data: {
+            type: "pie",
+            columns: sortedData,
+        },
+    });
+};
+
 
 //更改訂單狀態、刪除單筆訂單
 orderSection.addEventListener("click",e => {
