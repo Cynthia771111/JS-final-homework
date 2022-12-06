@@ -51,6 +51,7 @@ function adminRender(){
         </tr>`
         })
         orderSection.innerHTML = str
+
         //啟動圓餅圖函式
         chart();
     })
@@ -59,43 +60,51 @@ function adminRender(){
         console.log(error.status);
     })
 }
+
+
+
 //渲染圓餅圖函式
 function chart(){
-    let rawData = {};
+    //抓出各個商品名稱與銷售額
+    let salesCount = {};
     orderData.forEach(item => {
         item.products.forEach(product => {
-            if(rawData[product.title] == undefined){
-                rawData[product.title] = parseInt(product.quantity)
-            } 
-            else {
-                rawData[product.title] += parseInt(product.quantity)
+            let perSales = [];
+            let subPrice = product.price*product.quantity;
+            if(salesCount[product.title]== undefined){
+                salesCount[product.title] = subPrice
             }
+            else {
+                salesCount[product.title] += subPrice
+            }
+
         })
     })
-    let itemTitle = Object.keys(rawData);
+    //整理成圓餅圖需要的資料格式
     let chartData = [];
-    itemTitle.forEach((item)=>{
-        let perData = [];
-        perData.push(item)
-        perData.push(rawData[item])
-        chartData.push(perData)
+    let titleArr = Object.keys(salesCount);
+    titleArr.forEach(item => {
+        perArr = [];
+        perArr.push(item);
+        perArr.push(salesCount[item]);
+        chartData.push(perArr);
     })
-    //各種商品依照銷售件數由大到小排列
-    chartData.sort((a,b)=> {
+    //各種商品依照銷售額由大到小排列
+    chartData.sort(function(a,b){
         return b[1] - a[1];
-    });
-    //製作只有銷售前三名以及其他剩餘品項總和的陣列
+    })
+    //製作出前三名有商品名稱，其他商品合併的資料格式
     let sortedData = [chartData[0],chartData[1],chartData[2]];
     let othersData = chartData.filter((item,index)=>{    //第四名以後的陣列
         if(index>=3){
             return item;
         }
     })
-    let othersNum = 0;  //第四名以後的所有銷售數量總和
+    let othersSales = 0;  //第四名以後的所有銷售額總和
     othersData.forEach(item => {
-        othersNum += item[1]
+        othersSales += item[1]
     })
-    let others = ["其他",othersNum];   //製作sortedData中的最後一個item
+    let others = ["其他",othersSales];   //製作sortedData中的最後一個item
     sortedData.push(others);
 
     // C3.js
@@ -163,3 +172,4 @@ deleteAll.addEventListener("click",e => {
             adminRender();
         })
 })
+
